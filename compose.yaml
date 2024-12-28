@@ -1,0 +1,62 @@
+services:
+  server:
+    build:
+      context: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - server_setup
+    restart: on-failure
+
+  redis:
+    image: redis:alpine
+    hostname: redis_cache
+    ports:
+      - "6379:6379"
+    command: redis-server
+    volumes:
+      - cache:/data
+    restart: on-failure
+    networks:
+      - server_setup
+
+  postgres:
+    image: postgres:14.3-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: "cache_db"
+    ports:
+      - "5432:5432"
+    volumes:
+      - data:/var/lib/postgresql/data
+    restart: on-failure
+    networks:
+      - server_setup
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+    volumes:
+      - pgadmin:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    restart: always
+    networks:
+      - server_setup
+
+volumes:
+  cache:
+  data:
+  pgadmin:
+
+networks:
+  server_setup:
+    driver: bridge
