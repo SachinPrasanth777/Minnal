@@ -10,3 +10,6 @@ class Database:
 
     async def disconnect(self):
         await self.prisma.disconnect()
+
+
+prisma = Database()
