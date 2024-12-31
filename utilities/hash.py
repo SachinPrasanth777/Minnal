@@ -3,7 +3,7 @@ import bcrypt
 from dotenv import load_dotenv
 import os
 import datetime
-from schema.models import UserSignUp
+import time
 
 load_dotenv()
 
@@ -19,3 +19,7 @@ class Hash:
         expiration = datetime.datetime.utcnow() + datetime.timedelta(hours=24)
         payload = {"sub": email, "exp": expiration}
         return jwt.encode(payload, os.getenv("SECRET"), algorithm="HS256")
+
+    def decodeJWT(self, token: str) -> dict:
+        decoded_token = jwt.decode(token, os.getenv("SECRET"), algorithms=["HS256"])
+        return decoded_token if decoded_token["exp"] >= time.time() else None
