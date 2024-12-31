@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 from utilities.database import prisma
 from schema.models import UserSignUp, UserLogin, User
 from utilities.hash import Hash
 from utilities.redis import CacheConfig, CacheService
+from googleapiclient.discovery import build
 from middlewares.dependency import get_current_user
 from dotenv import load_dotenv
 from uuid import UUID
@@ -15,6 +16,7 @@ load_dotenv()
 auth_router = APIRouter()
 cache_config = CacheConfig(REDIS_URL=os.getenv("REDIS_URL"), REDIS_DB=0)
 cache_service = CacheService(cache_config)
+API_KEY = os.getenv("API_KEY")
 
 
 @auth_router.on_event("startup")
@@ -107,3 +109,39 @@ async def get_user(id: UUID, current_user: User = Depends(get_current_user)):
     except Exception as e:
         logging.error(f"Error retrieving user: {e}")
         raise HTTPException(status_code=500, detail="Server error")
+
+
+def search(youtube, **kwargs):
+    return youtube.search().list(part="snippet", **kwargs).execute()
+
+
+@auth_router.get("/youtube-videos")
+async def get_youtube_videos(query: str = Query(...)):
+    cache_key = f"youtube_videos:{query}"
+    cached_videos = await cache_service.get(cache_key)
+
+    if cached_videos:
+        print(f"Cache hit for query: {query}")
+        return JSONResponse(
+            content=cached_videos, status_code=200
+        )  # No json.loads needed
+
+    youtube = build("youtube", "v3", developerKey=API_KEY)
+    video_urls = []
+
+    try:
+        response = search(youtube, q=query, type="video", maxResults=10)
+
+        for item in response.get("items", []):
+            video_id = item["id"]["videoId"]
+            video_url = f"https://www.youtube.com/watch?v={video_id}"
+            video_urls.append(video_url)
+
+        await cache_service.set(cache_key, {"video_urls": video_urls}, expire=3600)
+        print(f"Caching results for query: {query}")
+
+        return JSONResponse(content={"video_urls": video_urls})
+
+    except Exception as e:
+        logging.error(f"Error fetching YouTube videos: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

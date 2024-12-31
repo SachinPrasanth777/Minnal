@@ -2,6 +2,7 @@ from typing import Callable, List, Optional
 from pydantic import BaseModel
 from redis.asyncio import Redis
 import functools
+import json
 
 
 class CacheConfig(BaseModel):
@@ -30,25 +31,27 @@ class CacheService:
             health_check_interval=self.config.HEALTH_CHECK_INTERVAL,
         )
 
-    async def set(self, key: str, value: str, expire: Optional[str] = None):
+    async def set(self, key: str, value: str, expire: Optional[int] = None):
         if not self.redis:
             raise RuntimeError("Cache Service Failed")
-        await self.redis.set(key, value, ex=expire)
+        await self.redis.set(key, json.dumps(value), ex=expire)
 
     async def get(self, key: str):
         if not self.redis:
             raise RuntimeError("Cache Service Failed")
-        return await self.redis.get(key)
+        value = await self.redis.get(key)
+        return json.loads(value) if value else None
 
     async def delete(
         self, prefix: Optional[str] = None, function_name: Optional[str] = None
-    ):
+    ) -> int:
         if not self.redis:
             raise RuntimeError("Cache Service Failed")
         pattern = f"{prefix or '*'}:{function_name or '*'}*"
         keys = await self.redis.keys(pattern)
         if keys:
-            await self.redis.delete(*keys)
+            return await self.redis.delete(*keys)
+        return 0
 
     async def health_check(self):
         if not self.redis:
@@ -74,11 +77,11 @@ class CacheService:
                 key = ":".join(key_components)
 
                 cached_value = await self.get(key)
-                if cached_value:
+                if cached_value is not None:
                     return cached_value
 
                 result = await func(*args, **kwargs)
-                await self.set(key, result, expire)
+                await self.set(key, json.dumps(result), expire)
                 return result
 
             return wrapper
