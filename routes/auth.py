@@ -1,9 +1,11 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from fastapi import HTTPException
 from utilities.database import prisma
-from schema.models import UserSignUp, UserLogin
+from schema.models import UserSignUp, UserLogin, User
 from utilities.hash import Hash
+from middlewares.dependency import get_current_user
+from uuid import UUID
 import logging
 
 auth_router = APIRouter()
@@ -49,3 +51,22 @@ async def login(user: UserLogin):
     except Exception as e:
         logging.error(f"Error logging in: {e}")
         raise HTTPException(detail="Login Failed", status_code=400)
+
+
+@auth_router.get("/user/{id}")
+async def get_user(id: UUID, current_user: User = Depends(get_current_user)):
+    try:
+        user = await prisma.prisma.user.find_unique(where={"id": str(id)})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        return JSONResponse(
+            content={
+                "id": user.id,
+                "email": user.email,
+                "username": user.username,
+            },
+            status_code=200,
+        )
+    except Exception as e:
+        logging.error(f"Error retrieving user: {e}")
+        raise HTTPException(status_code=500, detail="Server error")
