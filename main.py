@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from routes.auth import auth_router
 import socketio
 from chat.socket import sio
+from utilities.database import prisma
 
 app = FastAPI()
 
@@ -18,6 +19,16 @@ app.add_middleware(
 )
 
 app.include_router(auth_router, prefix="/auth")
+
+
+@app.on_event("startup")
+async def startup_event():
+    await prisma.connect()
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    await prisma.disconnect()
 
 
 @app.get("/")
