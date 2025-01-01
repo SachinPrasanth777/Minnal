@@ -121,9 +121,7 @@ async def get_youtube_videos(query: str = Query(...)):
 
     if cached_videos:
         print(f"Cache hit for query: {query}")
-        return JSONResponse(
-            content=cached_videos, status_code=200
-        )  # No json.loads needed
+        return JSONResponse(content=cached_videos, status_code=200)
 
     youtube = build("youtube", "v3", developerKey=API_KEY)
     video_urls = []
