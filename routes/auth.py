@@ -3,10 +3,11 @@ from fastapi.responses import JSONResponse
 from utilities.database import prisma
 from schema.models import UserSignUp, UserLogin, User
 from utilities.hash import Hash
-from utilities.redis import CacheConfig, CacheService
+from utilities.redis import cache_service
 from googleapiclient.discovery import build
 from middlewares.dependency import get_current_user
 from dotenv import load_dotenv
+
 from uuid import UUID
 import logging
 import json
@@ -14,8 +15,6 @@ import os
 
 load_dotenv()
 auth_router = APIRouter()
-cache_config = CacheConfig(REDIS_URL=os.getenv("REDIS_URL"), REDIS_DB=0)
-cache_service = CacheService(cache_config)
 API_KEY = os.getenv("API_KEY")
 
 

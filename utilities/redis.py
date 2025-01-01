@@ -3,6 +3,10 @@ from pydantic import BaseModel
 from redis.asyncio import Redis
 import functools
 import json
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 
 class CacheConfig(BaseModel):
@@ -92,3 +96,7 @@ class CacheService:
         if not self.redis:
             raise RuntimeError("CacheService not initialized")
         await self.redis.flushdb()
+
+
+cache_config = CacheConfig(REDIS_URL=os.getenv("REDIS_URL"), REDIS_DB=0)
+cache_service = CacheService(cache_config)
