@@ -8,8 +8,17 @@ generator client {
 }
 
 model User {
-  id       String    @id @default(uuid())
-  username String
-  email    String @unique
+  id    String  @id @default(uuid())
+  username  String @unique
+  email String  @unique
   password String
+  rooms Room[]
+}
+
+model Room {
+  id        String @id @default(uuid())
+  name      String
+  code      String @unique
+  createdBy User   @relation(fields: [userId], references: [id])
+  userId    String
 }
