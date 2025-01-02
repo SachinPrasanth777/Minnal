@@ -8,6 +8,8 @@ import { MessageInput } from '@/components/chat/message-input'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { showNotification } from '@/lib/notifications'
+import { ToastProvider } from '@/components/providers/toast-provider'
 
 interface Message {
   id: string
@@ -39,34 +41,31 @@ export default function ChatPage() {
     })
 
     newSocket.on('connect', () => {
-      console.log('Connected to server')
+      showNotification('Connected to server', 'success')
+    })
+
+    newSocket.on('disconnect', () => {
+      showNotification('Disconnected from server', 'error')
     })
 
     newSocket.on('welcome', (data) => {
-      addMessage({
-        id: Date.now().toString(),
-        user: 'System',
-        message: data.data,
-        timestamp: new Date()
-      })
+      showNotification(data.data)
     })
 
     newSocket.on('joined', (data) => {
-      addMessage({
-        id: Date.now().toString(),
-        user: 'System',
-        message: `Joined room: ${data.room}`,
-        timestamp: new Date()
-      })
+      showNotification(`Joined room: ${data.room}`, 'success')
     })
 
     newSocket.on('message', (data) => {
-      addMessage({
-        id: Date.now().toString(),
-        user: data.user || 'Anonymous',
-        message: data.message,
-        timestamp: new Date()
-      })
+      // Only add actual chat messages to the messages list
+      if (data.user !== 'System') {
+        addMessage({
+          id: Date.now().toString(),
+          user: data.user || 'Anonymous',
+          message: data.message,
+          timestamp: new Date()
+        })
+      }
     })
 
     setSocket(newSocket)
@@ -108,52 +107,56 @@ export default function ChatPage() {
       setRooms(prev => [...prev, newRoom])
       setNewRoomName('')
       handleRoomSelect(newRoom.name)
+      showNotification(`Created new room: ${newRoom.name}`, 'success')
     }
   }
 
   return (
-    <div className="flex h-screen">
-      {/* Sidebar */}
-      <div className="w-64 border-r bg-gray-50/50">
-        <div className="p-4 border-b">
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button className="w-full">Create Room</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create a new room</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <Input
-                  value={newRoomName}
-                  onChange={(e) => setNewRoomName(e.target.value)}
-                  placeholder="Enter room name"
-                />
-                <Button onClick={handleCreateRoom}>Create</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+    <>
+      <ToastProvider />
+      <div className="flex h-screen">
+        {/* Sidebar */}
+        <div className="w-64 border-r bg-gray-50/50">
+          <div className="p-4 border-b">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="w-full">Create Room</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create a new room</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <Input
+                    value={newRoomName}
+                    onChange={(e) => setNewRoomName(e.target.value)}
+                    placeholder="Enter room name"
+                  />
+                  <Button onClick={handleCreateRoom}>Create</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+          <RoomList
+            rooms={rooms}
+            currentRoom={currentRoom}
+            onRoomSelect={handleRoomSelect}
+          />
         </div>
-        <RoomList
-          rooms={rooms}
-          currentRoom={currentRoom}
-          onRoomSelect={handleRoomSelect}
-        />
-      </div>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
-        <div className="p-4 border-b">
-          <h2 className="text-xl font-semibold">{currentRoom || 'Select a room'}</h2>
+        {/* Main Chat Area */}
+        <div className="flex-1 flex flex-col">
+          <div className="p-4 border-b">
+            <h2 className="text-xl font-semibold">{currentRoom || 'Select a room'}</h2>
+          </div>
+          <MessageList messages={messages} />
+          <MessageInput
+            onSendMessage={handleSendMessage}
+            disabled={!currentRoom}
+          />
         </div>
-        <MessageList messages={messages} />
-        <MessageInput
-          onSendMessage={handleSendMessage}
-          disabled={!currentRoom}
-        />
       </div>
-    </div>
+    </>
   )
 }
 
