@@ -39,7 +39,7 @@ export default function LoginPage() {
       if (response.ok) {
         const data = await response.json()
         localStorage.setItem('token', data.token)
-        router.push('/')
+        router.push('/chat')
       } else {
         const errorData = await response.json()
         setError(errorData.detail || 'Login failed')
