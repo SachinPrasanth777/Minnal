@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { showNotification } from '@/lib/notifications'
 import { ToastProvider } from '@/components/providers/toast-provider'
+import { useRouter } from 'next/navigation'
 
 interface Message {
   id: string
@@ -25,6 +26,7 @@ interface Room {
 }
 
 export default function ChatPage() {
+  const router = useRouter()
   const [socket, setSocket] = useState<Socket | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [rooms, setRooms] = useState<Room[]>([
@@ -33,15 +35,34 @@ export default function ChatPage() {
   ])
   const [currentRoom, setCurrentRoom] = useState('')
   const [newRoomName, setNewRoomName] = useState('')
-  const [username, setUsername] = useState('User' + Math.floor(Math.random() * 1000))
+  const [currentUser, setCurrentUser] = useState('')
 
   useEffect(() => {
+    const token = localStorage.getItem('token')
+    
+    if (!token) {
+      router.push('/login')
+      return
+    }
+
     const newSocket = io('http://localhost:8000', {
-      path: '/socket.io'
+      path: '/socket.io',
+      extraHeaders: {
+        Authorization: `Bearer ${token}`
+      }
     })
 
     newSocket.on('connect', () => {
       showNotification('Connected to server', 'success')
+    })
+
+    newSocket.on('connect_error', (error) => {
+      if (error.message === 'No token provided' || error.message.includes('unauthorized')) {
+        showNotification('Authentication failed', 'error')
+        router.push('/login')
+      } else {
+        showNotification('Failed to connect to server', 'error')
+      }
     })
 
     newSocket.on('disconnect', () => {
@@ -49,6 +70,9 @@ export default function ChatPage() {
     })
 
     newSocket.on('welcome', (data) => {
+      // Extract email from welcome message and set as current user
+      const email = data.data.split(' ')[1].replace('!', '')
+      setCurrentUser(email)
       showNotification(data.data)
     })
 
@@ -57,13 +81,12 @@ export default function ChatPage() {
     })
 
     newSocket.on('message', (data) => {
-      // Only add actual chat messages to the messages list
       if (data.user !== 'System') {
         addMessage({
           id: Date.now().toString(),
           user: data.user || 'Anonymous',
-          message: data.message,
-          timestamp: new Date()
+          message: data.message || data.content,
+          timestamp: new Date(data.timestamp || Date.now())
         })
       }
     })
@@ -73,7 +96,7 @@ export default function ChatPage() {
     return () => {
       newSocket.close()
     }
-  }, [])
+  }, [router])
 
   const addMessage = (message: Message) => {
     setMessages(prev => [...prev, message])
@@ -92,7 +115,7 @@ export default function ChatPage() {
       socket.emit('chat_message', {
         room: currentRoom,
         message,
-        user: username
+        user: currentUser
       })
     }
   }
@@ -149,7 +172,10 @@ export default function ChatPage() {
           <div className="p-4 border-b">
             <h2 className="text-xl font-semibold">{currentRoom || 'Select a room'}</h2>
           </div>
-          <MessageList messages={messages} />
+          <MessageList 
+            messages={messages} 
+            currentUser={currentUser}
+          />
           <MessageInput
             onSendMessage={handleSendMessage}
             disabled={!currentRoom}
