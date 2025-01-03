@@ -39,6 +39,9 @@ export function MessageList({ messages, currentUser }: MessageListProps) {
                 "flex flex-col gap-1",
                 isCurrentUser ? "items-end" : "items-start"
               )}>
+                <span className="text-xs text-muted-foreground px-2">
+                  {message.user}
+                </span>
                 <div className={cn(
                   "rounded-2xl px-4 py-2 text-sm",
                   isCurrentUser 
@@ -58,4 +61,3 @@ export function MessageList({ messages, currentUser }: MessageListProps) {
     </ScrollArea>
   )
 }
-
