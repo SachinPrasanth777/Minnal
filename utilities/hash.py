@@ -15,9 +15,9 @@ class Hash:
     def check_password(self, password: str, hashed_password: str) -> bool:
         return bcrypt.checkpw(password.encode("utf-8"), hashed_password.encode("utf-8"))
 
-    def generate_token(self, email: str) -> str:
+    def generate_token(self, username: str) -> str:
         expiration = datetime.datetime.utcnow() + datetime.timedelta(hours=24)
-        payload = {"sub": email, "exp": expiration}
+        payload = {"sub": username, "exp": expiration}
         return jwt.encode(payload, os.getenv("SECRET"), algorithm="HS256")
 
     def decodeJWT(self, token: str) -> dict:

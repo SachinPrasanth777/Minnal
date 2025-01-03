@@ -60,8 +60,11 @@ async def login(user: UserLogin):
         if not password_valid:
             raise HTTPException(status_code=400, detail="Invalid Credentials")
 
-        token = Hash().generate_token(user.email)
-        return JSONResponse(content={"token": token}, status_code=200)
+        token = Hash().generate_token(existing_user.username)
+        return JSONResponse(
+            content={"token": token, "username": existing_user.username},
+            status_code=200,
+        )
     except Exception as e:
         logging.error(f"Error logging in: {e}")
         raise HTTPException(detail="Login Failed", status_code=400)
