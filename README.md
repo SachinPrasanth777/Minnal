@@ -58,7 +58,7 @@ graph LR
 
 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/minnal.git
+git clone https://github.com/SachinPrasanth777/Minnal.git
 cd minnal
 ```
 
@@ -114,4 +114,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [Next.js Documentation](https://nextjs.org/docs)
 - [Socket.IO Documentation](https://socket.io/docs/v4)
-- [Prisma Documentation](https://www.prisma.io/docs)
+- [Prisma Documentation](https://prisma-client-py.readthedocs.io/en/stable/)
