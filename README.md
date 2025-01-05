@@ -35,7 +35,6 @@
 ### DevOps
 - **Docker** - Containerization
 - **Docker Compose** - Multi-container orchestration
-- **Nginx** - Reverse proxy (optional)
 
 ## 🏗️ Architecture
 
