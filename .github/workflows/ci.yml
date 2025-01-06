@@ -31,10 +31,3 @@ jobs:
       - name: Run code formatter
         run: |
           black --check .
-
-      - name: Print debugging information
-        run: |
-          echo "Python Version: $(python --version)"
-          echo "Working Directory: $(pwd)"
-          echo "Contents of Working Directory: $(ls -l)"
-          echo "Contents of site-packages: $(ls -l myworld/lib/python*/site-packages)"
