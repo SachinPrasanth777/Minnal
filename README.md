@@ -1,7 +1,7 @@
 <h1 align="center">⚡ Minnal</h1>
 
 <div align="center">
-  <p>A real-time chat application built with modern technologies</p>
+  <p>A real-time chat application for redis and fastapi starters</p>
 </div>
 
 ## 🚀 Features
